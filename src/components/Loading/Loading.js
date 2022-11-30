@@ -1,8 +1,13 @@
 import React from 'react'
+import { Container, Loader, Title} from './LoadingStyles'
 
 const Loading = () => {
   return (
-    <div>Loading</div>
+      <Container>
+        <Title>Uploading... </Title>
+        <Loader />
+      </Container>
+
   )
 }
 

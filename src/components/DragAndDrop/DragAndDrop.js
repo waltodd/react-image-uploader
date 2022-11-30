@@ -5,6 +5,7 @@ import {Loading} from '../index'
 
 
 
+
 const DragAndDrop = () => {
   const [file, setFile] = useState(null);
   const inputRef = useRef();
@@ -19,11 +20,9 @@ const DragAndDrop = () => {
   }
 
   if(file) return (
-    <div>
-      <ul>
-        {Array.from(file).map((f,idx) =><li key={idx}>{f.name}</li>)}
-      </ul>
-    </div>
+    <Wrapper>
+      <Loading />
+    </Wrapper>
   )
   return (
     <>
