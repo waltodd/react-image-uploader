@@ -19,8 +19,9 @@ const DragAndDrop = () => {
   const [files, setFiles] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSelected, setIsSelected] = useState(false);
+  const [getImage, setGetImage] = useState(false);
   const inputRef = useRef();
-  const [image, setImage] = useState();
+  const [image, setImage] = useState(null);
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -28,22 +29,43 @@ const DragAndDrop = () => {
     let data = e.dataTransfer.files;
     setFiles(data);
 
+    //    let {name[0]} = data;
+
     const formData = new FormData();
-    Array.from(e.dataTransfer.files).map((elem) => {
+    Array.from(data).map((elem) => {
       formData.append("file", elem);
+      //name = elem
     });
+
+    const { name } = data[0];
+    console.log(name);
 
     //Make the post request
     axios
       .post(`${baseURL}/upload/`, formData)
       .then((response) => {
         if (response.status === 200) {
+          console.log("Image uploaded successfully");
+
+          setGetImage(true);
+        }
+      })
+      .catch((error) => {
+        console.log(error.message);
+      });
+
+    //Get image data
+    axios
+      .get(`${baseURL}/file/${name}`)
+      .then((response) => {
+        if (response.status === 200) {
+          const result = response.data[0];
+
           const interval = setInterval(() => {
+            setImage(result);
             setIsLoading(false);
             return clearInterval(interval);
-          }, 5000);
-
-          console.log("Image uploaded successfully");
+          }, 3000);
         }
       })
       .catch((error) => {
@@ -52,9 +74,7 @@ const DragAndDrop = () => {
   };
 
   const handleClick = (e) => {
-    
     if (!isSelected) {
-      
       setIsSelected(true);
     }
     inputRef.current.click();
@@ -65,14 +85,12 @@ const DragAndDrop = () => {
   };
 
   useEffect(() => {
-    if (isSelected === true) {
-
-      let name ='';
+    if (isSelected) {
+      let name = "";
       const formData = new FormData();
       Array.from(files).map((elem) => {
         formData.append("file", elem);
         name = elem.name;
-
       });
 
       //Make the post request
@@ -80,11 +98,7 @@ const DragAndDrop = () => {
         .post(`${baseURL}/upload/`, formData)
         .then((response) => {
           if (response.status === 200) {
-            const interval = setInterval(() => {
-              setIsLoading(false);
-              return clearInterval(interval);
-            }, 1000);
-
+            //setIsLoading(false);
             console.log("Image uploaded successfully");
           }
         })
@@ -92,32 +106,33 @@ const DragAndDrop = () => {
           console.log(error.message);
         });
 
-      const interval = setInterval(() => {
-        console.log(name)
-        //Get image data
-        axios
-          .get(`${baseURL}/file/${name}`)
-          .then((response) => {
-            if (response.status === 200) {
-              console.log(response.data);
-            }
-          })
-          .catch((error) => {
-            console.log(error.message);
-          });
-          return clearInterval(interval);
-      }, 5000);
+      console.log(name);
+      //Get image data
+      axios
+        .get(`${baseURL}/file/${name}`)
+        .then((response) => {
+          if (response.status === 200) {
+            const result = response.data[0];
+            
+            const interval = setInterval(() => {
+              console.log(result);
+            setImage(result);
+              setIsSelected(false);
+              setIsLoading(false);
+
+              return clearInterval(interval);
+            }, 3000);
+          }
+        })
+        .catch((error) => {
+          console.log(error.message);
+        });
     }
-  }, [files]);
+  }, [files, image]);
 
   if (files)
     return (
-      <Wrapper>
-        {isLoading ? <Loading /> : <Preview />}
-        {/* {Array.from(files).map((file, idx) => (
-          <h1 key={idx}>{file.name}</h1>
-        ))} */}
-      </Wrapper>
+      <Wrapper>{isLoading ? <Loading /> : <Preview {...image} />}</Wrapper>
     );
   return (
     <>

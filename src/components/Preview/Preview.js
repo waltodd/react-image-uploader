@@ -1,9 +1,25 @@
-import React from 'react'
+import React, { useState, useEffect } from "react";
+import { Wrapper, Title } from "./PreviewStyles";
 
-const Preview = () => {
+const Preview = (image) => {
+  //  const [preview, setPreview] = useState(true);
+
+  //  const interval = setInterval(() => {
+  //     if(image){
+  //       setPreview(false)
+  //     }
+  //     return clearInterval(interval);
+
+  //  }, 5000)
+  const { name, url } = image;
+
   return (
-    <div>Preview</div>
-  )
-}
+    <Wrapper>
+      
+      <img src={url} alt={name} />
 
-export default Preview
+    </Wrapper>
+  );
+};
+
+export default Preview;
