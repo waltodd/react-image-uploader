@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { AiFillWarning } from "react-icons/ai";
 import {
   Form,
   Wrapper,
@@ -8,6 +9,7 @@ import {
   Img,
   Text,
   Button,
+  ErrorContainer,
 } from "./DragAndDropStyles";
 import bg from "../../images/picture.png";
 import { Loading, Preview } from "../index";
@@ -19,7 +21,7 @@ const DragAndDrop = () => {
   const [files, setFiles] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSelected, setIsSelected] = useState(false);
-  const [getImage, setGetImage] = useState(false);
+  const [error, setError] = useState("");
   const inputRef = useRef();
   const [image, setImage] = useState(null);
 
@@ -27,7 +29,6 @@ const DragAndDrop = () => {
     e.preventDefault();
     e.stopPropagation();
     let data = e.dataTransfer.files;
-    setFiles(data);
 
     //    let {name[0]} = data;
 
@@ -38,7 +39,7 @@ const DragAndDrop = () => {
     });
 
     const { name } = data[0];
-    console.log(name);
+   // console.log(name);
 
     //Make the post request
     axios
@@ -46,38 +47,43 @@ const DragAndDrop = () => {
       .then((response) => {
         if (response.status === 200) {
           console.log("Image uploaded successfully");
-
-          setGetImage(true);
+          setFiles(data);
+          //setGetImage(true);
         }
       })
       .catch((error) => {
-        console.log(error.message);
+        const { message } = error.response.data;
+        setError(message);
+        //console.log("error response", message);
       });
 
     //Get image data
-    axios
-      .get(`${baseURL}/file/${name}`)
-      .then((response) => {
-        if (response.status === 200) {
-          const result = response.data[0];
-
-          const interval = setInterval(() => {
+    const interval = setInterval(() => {
+      axios
+        .get(`${baseURL}/file/${name}`)
+        .then((response) => {
+          if (response.status === 200) {
+            const result = response.data[0];
             setImage(result);
             setIsLoading(false);
-            return clearInterval(interval);
-          }, 3000);
-        }
-      })
-      .catch((error) => {
-        console.log(error.message);
-      });
+          }
+        })
+        .catch((error) => {
+          const { message } = error.response.data;
+          setError(message);
+        });
+
+      return clearInterval(interval);
+    }, 3000);
   };
 
   const handleClick = (e) => {
     if (!isSelected) {
       setIsSelected(true);
     }
+    
     inputRef.current.click();
+    
   };
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -89,10 +95,13 @@ const DragAndDrop = () => {
       let name = "";
       const formData = new FormData();
       Array.from(files).map((elem) => {
+        
         formData.append("file", elem);
         name = elem.name;
       });
 
+      //console.log(files)
+       setIsLoading(true);
       //Make the post request
       axios
         .post(`${baseURL}/upload/`, formData)
@@ -103,41 +112,57 @@ const DragAndDrop = () => {
           }
         })
         .catch((error) => {
-          console.log(error.message);
+          //const { message } = error.response.data;
+          setFiles('')
+          setError(error.response.data.message);
+          //console.log(error.response.data.message);
         });
 
       console.log(name);
-      //Get image data
-      axios
-        .get(`${baseURL}/file/${name}`)
-        .then((response) => {
-          if (response.status === 200) {
-            const result = response.data[0];
-            
-            const interval = setInterval(() => {
-              console.log(result);
-            setImage(result);
+      const interval = setInterval(() => {
+        //Get image data
+        axios
+          .get(`${baseURL}/file/${name}`)
+          .then((response) => {
+            if (response.status === 200) {
+              const result = response.data[0];
+              //console.log(result);
+              setImage(result);
               setIsSelected(false);
               setIsLoading(false);
+            }
+          })
+          .catch((error) => {
+            const { message } = error.response.data;
+            setError(message);
+          });
 
-              return clearInterval(interval);
-            }, 3000);
-          }
-        })
-        .catch((error) => {
-          console.log(error.message);
-        });
+        return clearInterval(interval);
+      }, 3000);
     }
   }, [files, image]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setError("");
+      return clearInterval(interval);
+    }, 3000);
+  }, [error]);
+
   if (files)
     return (
-      <Wrapper>{isLoading ? <Loading /> : <Preview {...image} />}</Wrapper>
+      <Wrapper> {isLoading ? <Loading /> : <Preview {...image} />}</Wrapper>
     );
   return (
     <>
       {!files && (
         <Wrapper>
+          {error && (
+            <ErrorContainer>
+              <AiFillWarning size="2rem" /> {error}
+            </ErrorContainer>
+          )}
+
           <Form>
             <Title>Upload your image</Title>
             <SubtitleType>File should be Jpeg, Png,...</SubtitleType>
@@ -147,6 +172,7 @@ const DragAndDrop = () => {
             </DropCard>
             <Text>Or</Text>
             <input
+             accept="image/png, image/jpeg, image/jpg"
               ref={inputRef}
               hidden
               type="file"
